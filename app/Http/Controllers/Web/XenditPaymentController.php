@@ -96,7 +96,7 @@ class XenditPaymentController extends Controller
             'should_send_email' => true,
             'customer' => $user,
             // 'items' => $products,
-            'success_redirect_url' => env('APP_URL').'/admin/business-settings/xendit-payment/success/'.$request->type,
+            'success_redirect_url' => env('APP_URL').'/xendit-payment/success/'.$request->type,
         ];
 
         $checkout_session = \Xendit\Invoice::create($params);
