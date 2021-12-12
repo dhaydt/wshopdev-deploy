@@ -87,6 +87,61 @@
                             </div>
                         @endif
 
+                        @php($user = auth('customer')->user())
+                    <div class="col-md-6 mb-4" style="cursor: pointer">
+                        <div class="card">
+                            <div class="card-body" style="height: 100px">
+                                <form class="needs-validation" method="POST" id="payment-form"
+                                    action="{{route('xendit-payment.vaInvoice')}}">
+
+                                    <input type="hidden" name="type" value="OVO">
+                                    {{-- <input class="price" type="hidden" name="price" value="price"> --}}
+                                    {{ csrf_field() }}
+                                    <button class="btn btn-block" type="submit">
+                                        <img width="150" style="margin-top: -10px"
+                                        src="{{asset('public/assets/front-end/img/ovo.png')}}" />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-4" style="cursor: pointer">
+                        <div class="card">
+                            <div class="card-body" style="height: 100px">
+                                <form class="needs-validation" method="POST" id="payment-form"
+                                    action="{{route('xendit-payment.vaInvoice')}}">
+
+                                    <input type="hidden" name="type" value="DANA">
+                                    {{-- <input class="price" type="hidden" name="price" value="price"> --}}
+                                    {{ csrf_field() }}
+                                    <button class="btn btn-block" type="submit">
+                                        <img width="150" style="margin-top: -10px"
+                                        src="{{asset('public/assets/front-end/img/dana.png')}}" />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-4" style="cursor: pointer">
+                        <div class="card">
+                            <div class="card-body" style="height: 100px">
+                                <form class="needs-validation" method="POST" id="payment-form"
+                                    action="{{route('xendit-payment.vaInvoice')}}">
+
+                                    <input type="hidden" name="type" value="BNI">
+                                    {{-- <input class="price" type="hidden" name="price" value="price"> --}}
+                                    {{ csrf_field() }}
+                                    <button class="btn btn-block" type="submit">
+                                        <img width="150" style="margin-top: -10px"
+                                        src="{{asset('public/assets/front-end/img/bni.png')}}" />
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
                         @php($coupon_discount = session()->has('coupon_discount') ? session('coupon_discount') : 0)
                         @php($amount = \App\CPU\CartManager::cart_grand_total() - $coupon_discount)
 

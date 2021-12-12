@@ -1,3 +1,5 @@
+read -p "Change your .env first: " z
+
 git add .
 
 read -p "Enter commit name: " x
