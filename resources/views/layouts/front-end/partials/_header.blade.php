@@ -1,5 +1,11 @@
 {{-- navabr / _header --}}
 <style>
+    #navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > a {
+        pointer-events: none;
+    }
+    #navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > ul {
+        display: block !important;
+    }
     #nav-global-location-slot {
         border: 2px solid transparent;
         padding: 10px;
@@ -24,7 +30,7 @@
         font-weight: 700;
         transition: .3s;
     }
-    
+
   .card-body.search-result-box {
     overflow: scroll;
     height: 400px;
@@ -423,7 +429,7 @@
                             <span class="input-group-text" style="font-size: 20px;">
                                 <i class="czi-search text-white"></i>
                             </span>
-                            </button 
+                            </button
                             <diV class="card search-card"
                                  style="position: absolute;background: white;z-index: 999;width: 100%;display: none">
                                 <div class="card-body search-result-box" id=""
@@ -699,7 +705,7 @@
               </a>
             </li>
             @endif
-            
+
             @php( $short = \App\CPU\Helpers::country())
                         {{-- {{ dd($short[0]) }} --}}
                         <li class="nav-item dropdown ml-auto">
@@ -720,7 +726,7 @@
 
                                 {{ $country }}
                                 @endif
-                            </a> 
+                            </a>
                             <ul class="dropdown-menu scroll-bar">
                                 <li>
                                     <a class="dropdown-item pb-1" href="{{route('home')}}">
@@ -800,13 +806,13 @@
 
 @push('script')
 <script>
-    
+
 fetch('https://ipapi.co/json/')
   .then(function(response) {
     return response.json();
   })
   .then(function(data) {
-    console.log('location',data);
+    // console.log('location',data);
 
             $('#auto-loc').append(data.country_name)
             $('#nav-global-location-slot').attr('data-original-title', data.city + ', ' + data.region);
