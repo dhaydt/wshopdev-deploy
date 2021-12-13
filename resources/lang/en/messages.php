@@ -1384,4 +1384,10 @@
   'fill_address' => 'Fill address',
   'Please fill your address first' => 'Please fill your address first',
   'Province' => 'Province',
+  'Bacause you change the shipping address, please select shipping methods again' => 'Bacause you change the shipping address  please select shipping methods again',
+  'Because_you_changed_the_address,_please_choose_the_shipping_method_again' => 'Because you changed the address  please choose the shipping method again',
+  'Because_you_changed_the_address_,_please_choose_the_shipping_method_again' => 'Because you changed the address   please choose the shipping method again',
+  'Please_choose_the_shipping_method_again' => 'Please choose the shipping method again',
+  'Because_you_changed_the_address' => 'Because you changed the address',
+  'You_changed_address' => 'You changed address',
 );

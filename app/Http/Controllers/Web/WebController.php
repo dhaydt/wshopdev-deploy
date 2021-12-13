@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\CPU\CartManager;
 use App\CPU\Helpers;
 use App\CPU\OrderManager;
 use App\CPU\ProductManager;
-use App\CPU\CartManager;
+use function App\CPU\translate;
 use App\Http\Controllers\Controller;
-use App\Model\Admin;
 use App\Model\Brand;
 use App\Model\BusinessSetting;
 use App\Model\Cart;
@@ -18,23 +18,18 @@ use App\Model\DealOfTheDay;
 use App\Model\FlashDeal;
 use App\Model\FlashDealProduct;
 use App\Model\HelpTopic;
+use App\Model\Order;
 use App\Model\OrderDetail;
 use App\Model\Product;
 use App\Model\Review;
 use App\Model\Seller;
-use App\Model\ShippingMethod;
+use App\Model\ShippingAddress;
 use App\Model\Shop;
-use App\Model\Order;
-use App\Model\Transaction;
-use App\Model\Translation;
-use App\User;
 use App\Model\Wishlist;
 use Brian2694\Toastr\Facades\Toastr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
-use function App\CPU\translate;
 
 class WebController extends Controller
 {
@@ -44,6 +39,7 @@ class WebController extends Controller
         if ($maintenance_mode) {
             return view('web-views.maintenance-mode');
         }
+
         return redirect()->route('home');
     }
 
@@ -51,7 +47,7 @@ class WebController extends Controller
     {
         $home_categories = Category::where('home_status', true)->get();
         $home_categories->map(function ($data) {
-            $data['products'] = Product::active()->whereJsonContains('category_ids', ["id" => (string)$data['id']])->inRandomOrder()->take(12)->get();
+            $data['products'] = Product::active()->whereJsonContains('category_ids', ['id' => (string) $data['id']])->inRandomOrder()->take(12)->get();
         });
         //products based on top seller
         $top_sellers = Seller::approved()->with('shop')
@@ -76,7 +72,7 @@ class WebController extends Controller
             })
             ->select('product_id', DB::raw('COUNT(product_id) as count'))
             ->groupBy('product_id')
-            ->orderBy("count", 'desc')
+            ->orderBy('count', 'desc')
             ->take(4)
             ->get();
         //Top rated
@@ -86,7 +82,7 @@ class WebController extends Controller
             })
             ->select('product_id', DB::raw('AVG(rating) as count'))
             ->groupBy('product_id')
-            ->orderBy("count", 'desc')
+            ->orderBy('count', 'desc')
             ->take(4)
             ->get();
 
@@ -114,7 +110,6 @@ class WebController extends Controller
                 'discount' => $data->discount,
                 'sellPrice' => $data->product->unit_price,
                 'discountedPrice' => $data->product->unit_price - $data->discount,
-
             ];
         })->toArray();
         // dd($deal->toArray());
@@ -123,6 +118,7 @@ class WebController extends Controller
             return view('web-views.deals', compact('deal', 'discountPrice'));
         }
         Toastr::warning(translate('not_found'));
+
         return back();
     }
 
@@ -136,18 +132,21 @@ class WebController extends Controller
         })->whereHas('seller', function ($query) {
             return $query->where(['status' => 'approved']);
         })->paginate(30);
+
         return view('web-views.sellers', compact('sellers'));
     }
 
     public function all_categories()
     {
         $categories = Category::all();
+
         return view('web-views.categories', compact('categories'));
     }
 
     public function categories_by_category($id)
     {
         $category = Category::with(['childes.childes'])->where('id', $id)->first();
+
         return response()->json([
             'view' => view('web-views.partials._category-list-ajax', compact('category'))->render(),
         ]);
@@ -156,6 +155,7 @@ class WebController extends Controller
     public function all_brands()
     {
         $brands = Brand::paginate(24);
+
         return view('web-views.brands', compact('brands'));
     }
 
@@ -164,12 +164,14 @@ class WebController extends Controller
         $sellers = Shop::whereHas('seller', function ($query) {
             return $query->approved();
         })->paginate(24);
+
         return view('web-views.sellers', compact('sellers'));
     }
 
     public function seller_profile($id)
     {
         $seller_info = Seller::find($id);
+
         return view('web-views.seller-profile', compact('seller_info'));
     }
 
@@ -196,26 +198,29 @@ class WebController extends Controller
 
     public function checkout_details(Request $request)
     {
-         if (auth('customer')->user()->district == null) {
+        if (auth('customer')->user()->district == null) {
             // dd('no distrcit');
             $country = DB::table('country')->get();
-            
+
             Toastr::warning(translate('Please fill your address first'));
 
             return view('web-views.addAddress', compact('country'));
         }
-        
+
         $cart_group_ids = CartManager::get_cart_group_ids();
         if (CartShipping::whereIn('cart_group_id', $cart_group_ids)->count() != count($cart_group_ids)) {
             Toastr::info(translate('select_shipping_method_first'));
+
             return redirect('shop-cart');
         }
 
         if (count($cart_group_ids) > 0) {
+            // session(['address_changed' => 0]);
             return view('web-views.checkout-shipping');
         }
 
         Toastr::info(translate('no_items_in_basket'));
+
         return redirect('/');
     }
 
@@ -224,6 +229,7 @@ class WebController extends Controller
         $cart_group_ids = CartManager::get_cart_group_ids();
         if (CartShipping::whereIn('cart_group_id', $cart_group_ids)->count() != count($cart_group_ids)) {
             Toastr::info(translate('select_shipping_method_first'));
+
             return redirect('shop-cart');
         }
 
@@ -232,6 +238,7 @@ class WebController extends Controller
         }
 
         Toastr::error(translate('incomplete_info'));
+
         return back();
     }
 
@@ -246,7 +253,7 @@ class WebController extends Controller
                 'payment_status' => 'unpaid',
                 'transaction_ref' => '',
                 'order_group_id' => $unique_id,
-                'cart_group_id' => $group_id
+                'cart_group_id' => $group_id,
             ];
             $order_id = OrderManager::generate_order($data);
             array_push($order_ids, $order_id);
@@ -265,17 +272,25 @@ class WebController extends Controller
     public function shop_cart()
     {
         if (auth('customer')->check() && Cart::where(['customer_id' => auth('customer')->id()])->count() > 0) {
-             if (auth('customer')->user()->district == null) {
+            if (auth('customer')->user()->district == null) {
                 // dd('no distrcit');
-                 $country = DB::table('country')->get();
-                 
-                 Toastr::warning(translate('Please fill your address first'));
-                 
+                $country = DB::table('country')->get();
+
+                Toastr::warning(translate('Please fill your address first'));
+
                 return view('web-views.addAddress', compact('country'));
             }
+
+            $user = auth('customer')->id();
+            $address = ShippingAddress::where('customer_id', $user)->first();
+
+            // dd($address);
+            session()->put('address_id', $address->id);
+
             return view('web-views.shop-cart');
         }
         Toastr::info(translate('no_items_in_basket'));
+
         return redirect('/');
     }
 
@@ -337,7 +352,7 @@ class WebController extends Controller
                     return $query->where(['added_by' => 'seller'])
                         ->where('user_id', $id);
                 })
-                ->where('name', 'like', $request->product_name . '%')
+                ->where('name', 'like', $request->product_name.'%')
                 ->paginate(12);
         } elseif ($request->category_id) {
             $products = Product::active()
@@ -362,6 +377,7 @@ class WebController extends Controller
             $shop = Shop::where('seller_id', $id)->first();
             if (isset($shop) == false) {
                 Toastr::error(translate('shop_does_not_exist'));
+
                 return back();
             }
         }
@@ -391,7 +407,6 @@ class WebController extends Controller
             return response()->json([
                 'view' => view('web-views.products._ajax-products', compact('products'))->render(),
             ], 200);
-
         }
 
         return view('web-views.shop-page', compact('products', 'shop'))->with('seller_id', $id);
@@ -405,6 +420,7 @@ class WebController extends Controller
         $countOrder = count($order_details);
         $countWishlist = count($wishlists);
         $relatedProducts = Product::with(['reviews'])->where('category_ids', $product->category_ids)->where('id', '!=', $product->id)->limit(12)->get();
+
         return response()->json([
             'success' => 1,
             'view' => view('web-views.partials._quick-view-data', compact('product', 'countWishlist', 'countOrder', 'relatedProducts'))->render(),
@@ -424,6 +440,7 @@ class WebController extends Controller
         }
 
         Toastr::error(translate('not_found'));
+
         return back();
     }
 
@@ -457,7 +474,7 @@ class WebController extends Controller
         if ($request['data_from'] == 'top-rated') {
             $reviews = Review::select('product_id', DB::raw('AVG(rating) as count'))
                 ->groupBy('product_id')
-                ->orderBy("count", 'desc')->get();
+                ->orderBy('count', 'desc')->get();
             $product_ids = [];
             foreach ($reviews as $review) {
                 array_push($product_ids, $review['product_id']);
@@ -469,7 +486,7 @@ class WebController extends Controller
             $details = OrderDetail::with('product')
                 ->select('product_id', DB::raw('COUNT(product_id) as count'))
                 ->groupBy('product_id')
-                ->orderBy("count", 'desc')
+                ->orderBy('count', 'desc')
                 ->get();
             $product_ids = [];
             foreach ($details as $detail) {
@@ -482,7 +499,7 @@ class WebController extends Controller
             $details = Wishlist::with('product')
                 ->select('product_id', DB::raw('COUNT(product_id) as count'))
                 ->groupBy('product_id')
-                ->orderBy("count", 'desc')
+                ->orderBy('count', 'desc')
                 ->get();
             $product_ids = [];
             foreach ($details as $detail) {
@@ -536,14 +553,14 @@ class WebController extends Controller
 
         if ($request->ajax()) {
             return response()->json([
-                'view' => view('web-views.products._ajax-products', compact('products'))->render()
+                'view' => view('web-views.products._ajax-products', compact('products'))->render(),
             ], 200);
         }
         if ($request['data_from'] == 'category') {
-            $data['brand_name'] = Category::find((int)$request['id'])->name;
+            $data['brand_name'] = Category::find((int) $request['id'])->name;
         }
         if ($request['data_from'] == 'brand') {
-            $data['brand_name'] = Brand::find((int)$request['id'])->name;
+            $data['brand_name'] = Brand::find((int) $request['id'])->name;
         }
 
         return view('web-views.products.view', compact('products', 'data'), $data);
@@ -552,6 +569,7 @@ class WebController extends Controller
     public function viewWishlist()
     {
         $wishlists = Wishlist::where('customer_id', auth('customer')->id())->get();
+
         return view('web-views.users-profile.account-wishlist', compact('wishlists'));
     }
 
@@ -561,25 +579,26 @@ class WebController extends Controller
             if (auth('customer')->check()) {
                 $wishlist = Wishlist::where('customer_id', auth('customer')->id())->where('product_id', $request->product_id)->first();
                 if (empty($wishlist)) {
-
-                    $wishlist = new Wishlist;
+                    $wishlist = new Wishlist();
                     $wishlist->customer_id = auth('customer')->id();
                     $wishlist->product_id = $request->product_id;
                     $wishlist->save();
 
                     $countWishlist = Wishlist::where('customer_id', auth('customer')->id())->get();
-                    $data = "Product has been added to wishlist";
+                    $data = 'Product has been added to wishlist';
 
                     $product_count = Wishlist::where(['product_id' => $request->product_id])->count();
                     session()->put('wish_list', Wishlist::where('customer_id', auth('customer')->user()->id)->pluck('product_id')->toArray());
+
                     return response()->json(['success' => $data, 'value' => 1, 'count' => count($countWishlist), 'id' => $request->product_id, 'product_count' => $product_count]);
                 } else {
-                    $data = "Product already added to wishlist";
+                    $data = 'Product already added to wishlist';
+
                     return response()->json(['error' => $data, 'value' => 2]);
                 }
-
             } else {
                 $data = translate('login_first');
+
                 return response()->json(['error' => $data, 'value' => 0]);
             }
         }
@@ -588,9 +607,10 @@ class WebController extends Controller
     public function deleteWishlist(Request $request)
     {
         Wishlist::where(['product_id' => $request['id'], 'customer_id' => auth('customer')->id()])->delete();
-        $data = "Product has been remove from wishlist!";
+        $data = 'Product has been remove from wishlist!';
         $wishlists = Wishlist::where('customer_id', auth('customer')->id())->get();
         session()->put('wish_list', Wishlist::where('customer_id', auth('customer')->user()->id)->pluck('product_id')->toArray());
+
         return response()->json([
             'success' => $data,
             'count' => count($wishlists),
@@ -603,6 +623,7 @@ class WebController extends Controller
     public function helpTopic()
     {
         $helps = HelpTopic::Status()->latest()->get();
+
         return view('web-views.help-topics', compact('helps'));
     }
 
@@ -615,6 +636,7 @@ class WebController extends Controller
     public function about_us()
     {
         $about_us = BusinessSetting::where('type', 'about_us')->first();
+
         return view('web-views.about-us', [
             'about_us' => $about_us,
         ]);
@@ -623,12 +645,14 @@ class WebController extends Controller
     public function termsandCondition()
     {
         $terms_condition = BusinessSetting::where('type', 'terms_condition')->first();
+
         return view('web-views.terms', compact('terms_condition'));
     }
 
     public function privacy_policy()
     {
         $privacy_policy = BusinessSetting::where('type', 'privacy_policy')->first();
+
         return view('web-views.privacy-policy', compact('privacy_policy'));
     }
 
@@ -664,9 +688,8 @@ class WebController extends Controller
             'mobile_number.required' => 'Mobile Number is Empty!',
             'subject.required' => ' Subject is Empty!',
             'message.required' => 'Message is Empty!',
-
         ]);
-        $contact = new Contact;
+        $contact = new Contact();
         $contact->name = $request->name;
         $contact->email = $request->email;
         $contact->mobile_number = $request->mobile_number;
@@ -674,6 +697,7 @@ class WebController extends Controller
         $contact->message = $request->message;
         $contact->save();
         Toastr::success(translate('Your Message Send Successfully'));
+
         return back();
     }
 }

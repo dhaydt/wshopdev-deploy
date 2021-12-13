@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer\Auth;
 use App\CPU\CartManager;
 use App\CPU\Helpers;
 use App\CPU\SMS_module;
+use function App\CPU\translate;
 use App\Http\Controllers\Controller;
 use App\Model\BusinessSetting;
 use App\Model\PhoneOrEmailVerification;
@@ -16,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Session;
-use function App\CPU\translate;
 
 class RegisterController extends Controller
 {
@@ -27,8 +27,10 @@ class RegisterController extends Controller
 
     public function register()
     {
+        $country = DB::table('country')->get();
         session()->put('keep_return_url', url()->previous());
-        return view('customer-view.auth.register');
+
+        return view('customer-view.auth.register', compact('country'));
     }
 
     public function submit(Request $request)
@@ -42,7 +44,8 @@ class RegisterController extends Controller
             'f_name' => 'required',
             'email' => 'required|email|unique:users',
             'phone' => 'unique:users',
-            'password' => 'required|min:8|same:con_password'
+            'country' => 'required',
+            'password' => 'required|min:8|same:con_password',
         ],
             [
                 'f_name.required' => 'First name is required',
@@ -52,9 +55,10 @@ class RegisterController extends Controller
             'f_name' => $request['f_name'],
             'l_name' => $request['l_name'],
             'email' => $request['email'],
+            'country' => $request['country'],
             'phone' => $request['phone'],
             'is_active' => 1,
-            'password' => bcrypt($request['password'])
+            'password' => bcrypt($request['password']),
         ]);
 
         $phone_verification = Helpers::get_business_settings('phone_verification');
@@ -67,6 +71,7 @@ class RegisterController extends Controller
         }
 
         Toastr::success(translate('registration_success_login_now'));
+
         return redirect(route('customer.auth.login'));
     }
 
@@ -126,12 +131,11 @@ class RegisterController extends Controller
                 }
 
                 Toastr::success(translate('verification_done_successfully'));
-
             } else {
                 Toastr::error(translate('Verification_code_or_OTP mismatched'));
+
                 return redirect()->back();
             }
-
         } else {
             if (isset($verify)) {
                 try {
@@ -146,7 +150,6 @@ class RegisterController extends Controller
             } else {
                 Toastr::error('Verification code/ OTP mismatched');
             }
-
         }
 
         return redirect(route('customer.auth.login'));
@@ -157,7 +160,7 @@ class RegisterController extends Controller
         if (auth('customer')->attempt(['email' => $email, 'password' => $password], true)) {
             session()->put('wish_list', Wishlist::where('customer_id', $user->id)->pluck('product_id')->toArray());
             $company_name = BusinessSetting::where('type', 'company_name')->first();
-            $message = 'Welcome to ' . $company_name->value . '!';
+            $message = 'Welcome to '.$company_name->value.'!';
             CartManager::cart_to_db();
         } else {
             $message = 'Credentials are not matched or your account is not active!';
@@ -165,5 +168,4 @@ class RegisterController extends Controller
 
         return $message;
     }
-
 }

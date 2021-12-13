@@ -86,7 +86,7 @@
                     </div>
                     @if($cart_key==$group->count()-1)
                     <!-- choosen shipping method-->
-                                    @php($choosen_shipping=\App\Model\CartShipping::where(['cart_group_id'=>$cartItem['cart_group_id']])->first())
+            @php($choosen_shipping=\App\Model\CartShipping::where(['cart_group_id'=>$cartItem['cart_group_id']])->first())
             @if(isset($choosen_shipping)==false)
             @php($choosen_shipping['shipping_method_id']=0)
             @endif
@@ -146,7 +146,7 @@
             @endforeach
             <div class="mt-3"></div>
             @endforeach
-            
+
             @if($shippingMethod=='inhouse_shipping')
                 @php($shippings=\App\CPU\Helpers::get_shipping_methods(1,'admin', $cartItem['product_id']))
             <div class="row">

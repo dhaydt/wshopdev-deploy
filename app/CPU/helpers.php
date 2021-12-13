@@ -13,6 +13,7 @@ use App\Model\Order;
 use App\Model\Product;
 use App\Model\Review;
 use App\Model\Seller;
+use App\Model\ShippingAddress;
 use App\Model\ShippingMethod;
 use App\User;
 use Carbon\Carbon;
@@ -228,7 +229,8 @@ class Helpers
     {
         $id = auth('customer')->id();
         // dd($id);
-        $user = User::find($id);
+        // $user = User::find($id);
+        $user = ShippingAddress::find(session()->get('address_id'));
         // dd($user);
         $to_district = $user->district_id;
         $to_type = $user->city_type;

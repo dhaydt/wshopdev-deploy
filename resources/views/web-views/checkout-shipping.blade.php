@@ -20,7 +20,7 @@
         }
 
         .btn-outline:focus {
-            border-color: {{$web_config['primary_color']}}   !important;
+            /* border-color: {{$web_config['primary_color']}}   !important; */
         }
     </style>
 @endpush
@@ -63,6 +63,7 @@
                                         <span>{{ \App\CPU\translate('address')}} : {{$address['address']}}, {{$address['city']}}, {{$address['zip']}}, {{$address['country']}}.</span>
                                     </li>
                                 @endforeach
+                                {{-- {{ dd(session()) }} --}}
                                 <li class="list-group-item mb-2 mt-2" onclick="anotherAddress()">
                                     <input type="radio" name="shipping_method_id"
                                            id="sh-0" value="0" data-toggle="collapse"
@@ -103,18 +104,70 @@
                                                         <option value="others">{{ \App\CPU\translate('Others')}}</option>
                                                     </select>
                                                 </div>
+                                                {{-- {{ dd() }} --}}
+                                                @if (auth('customer')->user()->country == 'ID')
+
                                                 <div class="form-group">
                                                     <label>{{ \App\CPU\translate('Country')}} <span
                                                             style="color: red">*</span></label>
+                                                            <input type="hidden" name="country" value="ID">
                                                     <input type="text" class="form-control"
-                                                           name="country" {{$shipping_addresses->count()==0?'required':''}}>
+                                                           name="country" {{$shipping_addresses->count()==0?'required':''}} value="Indonesia" disabled>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    @php($province = App\CPU\Helpers::province())
+                                                    <label for="province">{{ \App\CPU\translate('Province')}} <span
+                                                            style="color: red">*</span></label>
+                                                            <select class="form-control" name="state" {{$shipping_addresses->count()==0?'required':''}}>
+                                                                <option value="">Select your Province Address</option>
+                                                                @foreach($province as $p)
+                                                                <option value="{{$p['province_id'].','. $p['province']}}"
+                                                                    provincename="{{$p['province']}}">
+                                                                    {{$p['province']}}
+                                                                </option>
+                                                                @endforeach
+                                                            </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="city">{{ \App\CPU\translate('City')}} <span
+                                                            style="color: red">*</span></label>
+                                                            <select disabled class="form-control" name="city" id="city" placeholder="Select your city address" {{$shipping_addresses->count()==0?'required':''}}
+                                                            style="text-align: {{Session::get('direction') === " rtl" ? 'right' : 'left'
+                                                            }};">
+                                                            <option value="">Select your city address</option>
+                                                        </select>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="district">{{ \App\CPU\translate('District')}} <span
+                                                            style="color: red">*</span></label>
+                                                            <select disabled class="form-control" name="district" id="address-district" placeholder="Select your District address" {{$shipping_addresses->count()==0?'required':''}}
+                                                            style="text-align: {{Session::get('direction') === " rtl" ? 'right' : 'left'
+                                                            }};">
+                                                                <option value="">Select your district address</option>
+                                                        </select>
+                                                </div>
+                                                @else
+                                                @php($country = App\Country::all())
+                                                <div class="form-group">
+                                                    <label>{{ \App\CPU\translate('Country')}} <span
+                                                            style="color: red">*</span></label>
+                                                            <select id="country" name="country" class="form-control" {{$shipping_addresses->count()==0?'required':''}}>
+                                                                <option value="0" selected>---select country---</option>
+                                                                @foreach($country as $r)
+                                                                <option value="{{$r->country}}">{{$r->country_name}}</option>
+                                                                @endforeach
+                                                            </select>
                                                 </div>
                                                 <div class="form-group">
-                                                    <label for="exampleInputEmail1">{{ \App\CPU\translate('City')}} <span
+                                                    <label for="city">{{ \App\CPU\translate('City')}} <span
                                                             style="color: red">*</span></label>
-                                                    <input type="text" class="form-control"
+                                                    <input id="city" type="text" class="form-control"
                                                            name="city" {{$shipping_addresses->count()==0?'required':''}}>
                                                 </div>
+                                                @endif
 
                                                 <div class="form-group">
                                                     <label
@@ -173,7 +226,104 @@
 @endsection
 
 @push('script')
+<script>
+    $(document).ready(function(){
+        //ini ketika provinsi tujuan di klik maka akan eksekusi perintah yg kita mau
+        //name select nama nya "provinve_id" kalian bisa sesuaikan dengan form select kalian
 
+        $('select[name="state"]').on('change', function(){
+            $('#loading').show();
+            // kita buat variable provincedid untk menampung data id select province
+            console.log($(this).val())
+            let prov = $(this).val();
+            var array = prov.split(",");
+            let provin = $.each(array,function(i){
+                console.log(prov);
+            // console.log(array[0]);
+            return array[0]
+            });
+            let provinceid = provin[0]
+            //kita cek jika id di dpatkan maka apa yg akan kita eksekusi
+            if(provinceid){
+                // jika di temukan id nya kita buat eksekusi ajax GET
+                jQuery.ajax({
+                    // url yg di root yang kita buat tadi
+                    url:"/city/"+provinceid,
+                    // aksion GET, karena kita mau mengambil data
+                    type:'GET',
+                    // type data json
+                    dataType:'json',
+                    // jika data berhasil di dapat maka kita mau apain nih
+                    success:function(data){
+                        console.log(provinceid);
+                        // jika tidak ada select dr provinsi maka select kota kososng / empty
+                        $('select[name="city"]').empty();
+                        // // jika ada kita looping dengan each
+                        $.each(data, function(key, value){
+                            // console.log(key, value)
+                            kota = value.city_name
+                            type = value.type
+                            id = value.city_id
+                            type = value.type
+                        // // perhtikan dimana kita akan menampilkan data select nya, di sini saya memberi name select kota adalah kota_id
+                        $('select[name="city"]').append(`<option value="${id},${kota},${type}">
+                            ${kota} (${type})
+                        </option>`);
+
+                        $('select[name="city"]').removeAttr('disabled');
+                        $('#loading').hide();
+                        });
+                    }
+                });
+            }
+        });
+
+        $('select[name="city"]').on('change', function(){
+            $('#loading').show();
+            // kita buat variable provincedid untk menampung data id select province
+            console.log($(this).val())
+            let cities = $(this).val();
+            var array = cities.split(",");
+            let city = $.each(array,function(i){
+            // console.log(array[0]);
+            return array[0]
+            });
+            let cityId = city[0]
+            //kita cek jika id di dpatkan maka apa yg akan kita eksekusi
+            if(cityId){
+                // jika di temukan id nya kita buat eksekusi ajax GET
+                jQuery.ajax({
+                    // url yg di root yang kita buat tadi
+                    url:"/district/"+cityId,
+                    // aksion GET, karena kita mau mengambil data
+                    type:'GET',
+                    // type data json
+                    dataType:'json',
+                    // jika data berhasil di dapat maka kita mau apain nih
+                    success:function(data){
+                        console.log(cityId);
+                        // jika tidak ada select dr provinsi maka select kota kososng / empty
+                        $('select[name="district"]').empty();
+                        // // jika ada kita looping dengan each
+                        $.each(data, function(key, value){
+                            // console.log(key, value)
+                            district = value.subdistrict_name
+                            id = value.subdistrict_id
+                        // // perhtikan dimana kita akan menampilkan data select nya, di sini saya memberi name select kota adalah kota_id
+                        $('select[name="district"]').append(`<option value="${id},${district}">
+                            ${district}
+                        </option>`);
+
+                        $('select[name="district"]').removeAttr('disabled');
+                        $('#loading').hide();
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+</script>
     <script>
         function anotherAddress() {
             $('#sh-0').prop('checked', true);
@@ -196,6 +346,8 @@
                     allAreFilled = radioValueCheck;
                 }
             });
+
+            // console.log($('#address-form').serialize());
 
 
             if (allAreFilled) {
