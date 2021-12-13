@@ -1,11 +1,5 @@
 {{-- navabr / _header --}}
 <style>
-    #navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > a {
-        pointer-events: none;
-    }
-    #navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > ul {
-        display: block !important;
-    }
     #nav-global-location-slot {
         border: 2px solid transparent;
         padding: 10px;

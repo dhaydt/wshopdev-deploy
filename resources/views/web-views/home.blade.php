@@ -17,6 +17,13 @@
 
 <link rel="stylesheet" href="{{asset('public/assets/front-end')}}/css/home.css" />
 <style>
+
+#navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > a {
+        pointer-events: none;
+    }
+    #navbarCollapse > ul.navbar-nav.mega-nav.pr-2.pl-2.mr-2.d-none.d-xl-block > li > ul {
+        display: block !important;
+    }
   .media {
     background: white;
   }
@@ -1554,7 +1561,7 @@
                 }
             }
         })
-        
+
         $( window ).on( "load",function() {
             var work = $(".empty").parent('div').remove();
             console.log( work );
