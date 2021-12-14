@@ -61,9 +61,10 @@ class ShippingMethodController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'cart_group_id' => 'required',
-            'id' => 'required',
+            'id' => 'required_if:service,""',
+            'service' => 'required_if:id,""',
         ], [
-            'id.required' => translate('shipping_id_is_required'),
+            // 'id.required' => translate('shipping_id_is_required'),
         ]);
 
         if ($validator->errors()->count() > 0) {
@@ -88,10 +89,18 @@ class ShippingMethodController extends Controller
         if (isset($shipping) == false) {
             $shipping = new CartShipping();
         }
-        $shipping['cart_group_id'] = $request['cart_group_id'];
-        $shipping['shipping_method_id'] = $request['id'];
-        $shipping['shipping_cost'] = ShippingMethod::find($request['id'])->cost;
-        $shipping->save();
+
+        if (isset($request['id'])) {
+            $shipping['cart_group_id'] = $request['cart_group_id'];
+            $shipping['shipping_method_id'] = $request['id'];
+            $shipping['shipping_cost'] = ShippingMethod::find($request['id'])->cost;
+            $shipping->save();
+        } else {
+            $shipping['cart_group_id'] = $request['cart_group_id'];
+            $shipping['shipping_service'] = $request['service'];
+            $shipping['shipping_cost'] = $request['cost'];
+            $shipping->save();
+        }
     }
 
     public function chosen_shipping_methods(Request $request)
